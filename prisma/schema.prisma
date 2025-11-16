@@ -16,32 +16,32 @@ datasource db {
 
 
 model Employee{
-  id    Int   @id   @default(autoincrement())
-  name  String
-  email String  @unique
+  id        Int   @id   @default(autoincrement())
+  name      String
+  email     String  @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  currentSalary Float
+  currentSalary Float @default(1000)
   salaryHistory  SalaryHistory[]
   departmentId  Int
   department    Department  @relation(fields: [departmentId], references: [id])
 }
 
 model Department{
-  id    Int   @id   @default(autoincrement())
-  name  String
+  id        Int       @id   @default(autoincrement())
+  name      String    @unique
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   employees Employee[]
 }
 
 model SalaryHistory{
-  id  Int   @id   @default(autoincrement())
-  oldSalary  Float
+  id          Int       @id   @default(autoincrement())
+  oldSalary   Float
   newSalary   Float
-  changedAt DateTime  @default(now())
+  changedAt   DateTime  @default(now())
   employeeId  Int
-  employee  Employee  @relation(fields: [employeeId], references: [id])
+  employee    Employee  @relation(fields: [employeeId], references: [id])
 }
 
 

@@ -1,19 +1,27 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { DbService } from 'src/db/db.service';
 
 @Injectable()
 export class EmployeesService {
+  constructor(private readonly dbService: DbService){}
   create(createEmployeeDto: CreateEmployeeDto) {
-    return 'This action adds a new employee';
+    
+    return this.dbService.employee.create({
+      data: createEmployeeDto
+    })
   }
 
   findAll() {
-    return `This action returns all employees`;
+    return this.dbService.employee.findMany()
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} employee`;
+    const employee = this.dbService.employee.findUnique({
+      where: {id}
+    })
+    if(!employee) throw new NotFoundException("Employee does not exist.")
   }
 
   update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
