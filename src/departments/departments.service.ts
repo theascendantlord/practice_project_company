@@ -51,4 +51,5 @@ export class DepartmentsService {
     return this.dbService.department.delete({
       where: {id}})
   }
+  
 }
