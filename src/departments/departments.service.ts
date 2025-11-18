@@ -47,7 +47,7 @@ export class DepartmentsService {
     const dep = this.dbService.department.findUnique({
       where: {id}
     })
-    if(!dep) throw new NotFoundException("Department doesnt exist.")
+    if(!dep) throw new NotFoundException("Department doesn't exist.")
     return this.dbService.department.delete({
       where: {id}})
   }

@@ -1,20 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { DbService } from 'src/db/db.service';
+import { checkDepartmentExistence, checkEmployeeEmail, employeesFilter } from './employee.utils';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class EmployeesService {
   constructor(private readonly dbService: DbService){}
-  create(createEmployeeDto: CreateEmployeeDto) {
-    
-    return this.dbService.employee.create({
-      data: createEmployeeDto
-    })
+  async create(createEmployeeDto: CreateEmployeeDto) {
+    await checkDepartmentExistence(createEmployeeDto.departmentId, this.dbService)
+    try{
+      return await this.dbService.employee.create({
+        data: {
+          name: createEmployeeDto.name,
+          email: createEmployeeDto.email,
+          role:createEmployeeDto.role,
+          department: {connect : {id: createEmployeeDto.departmentId}}
+        }
+      })
+    }catch(error:any){
+      if(error.code === "P2002" && error.meta?.target?.includes('email')){
+        throw new ConflictException("Email already exists!")
+      }
+      throw error
+    }
   }
 
-  findAll() {
-    return this.dbService.employee.findMany()
+  async findAll(role: Role, minSalary: number, maxSalary: number) {
+    const employees  = await employeesFilter(this.dbService, role)
+    return employees
   }
 
   findOne(id: number) {
