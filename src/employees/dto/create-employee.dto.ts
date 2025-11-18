@@ -1,6 +1,6 @@
 import { BadRequestException } from "@nestjs/common";
 import { Transform, Type } from "class-transformer";
-import { IsEmail, IsEnum, IsNumber, IsString, Min } from "class-validator";
+import { IsEmail, IsEnum, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { Role } from "@prisma/client";
 
 export class CreateEmployeeDto {
@@ -27,4 +27,11 @@ export class CreateEmployeeDto {
     @IsEnum(Role)
     @Transform(({value}) => value.toUpperCase())
     role: Role  
+
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(1)
+    currentSalary: number
 }

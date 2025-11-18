@@ -1,9 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { DbService } from 'src/db/db.service';
 import { checkDepartmentExistence, checkEmployeeEmail, employeesFilter } from './employee.utils';
-import { Role } from '@prisma/client';
+import { Employee, Role } from '@prisma/client';
 
 @Injectable()
 export class EmployeesService {
@@ -32,18 +32,52 @@ export class EmployeesService {
     return employees
   }
 
-  findOne(id: number) {
-    const employee = this.dbService.employee.findUnique({
+  async findOne(id: number) {
+    const employee = await this.dbService.employee.findUnique({
       where: {id}
     })
     if(!employee) throw new NotFoundException("Employee does not exist.")
+    return employee
   }
 
-  update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    return `This action updates a #${id} employee`;
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
+    const emp = await this.dbService.employee.findUnique({where: {id}})
+    const data : any = {...updateEmployeeDto}
+    if(!emp) throw new BadRequestException("Employee does not exist.")
+    if(data.departmentId && data.departmentId !== emp.departmentId){
+      await checkDepartmentExistence(data.departmentId, this.dbService)
+      delete data.departmentId
+      data.department = {connect: {id: updateEmployeeDto.departmentId}}
+    }
+    if(updateEmployeeDto.newSalary && updateEmployeeDto.newSalary !== emp.currentSalary){
+      delete data.newSalary
+      await this.updateEmployeeSalary(id, emp, updateEmployeeDto.newSalary)
+      data.currentSalary = updateEmployeeDto.newSalary
+    }
+    try{
+      return await this.dbService.employee.update({
+        where: {id},
+        data
+      })
+    } catch(error) {
+      if(error.code === "P2002" && error.meta?.target?.includes("email")){
+        throw new ConflictException("Email already exists.")
+      }
+      throw error
+    }
   }
 
-  remove(id: number) {
+  async remove(id: number) {
     return `This action removes a #${id} employee`;
+  }
+
+  async updateEmployeeSalary(id: number, emp: Employee, newSalary: number){
+    return await this.dbService.salaryHistory.create({
+      data: {
+        oldSalary: emp.currentSalary,
+        newSalary: newSalary,
+        employee: {connect : {id}}
+      }
+    })
   }
 }
